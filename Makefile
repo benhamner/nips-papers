@@ -1,6 +1,6 @@
 output/papers.csv:
 	mkdir -p output
-	bpython src/download_papers.py
+	python src/download_papers.py
 csv: output/papers.csv
 
 working/no_header/papers.csv: output/papers.csv

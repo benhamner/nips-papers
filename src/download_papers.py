@@ -6,20 +6,21 @@ import re
 import requests
 import subprocess
 
-def text_from_pdf(pdf_path, temp_path):
-    if os.path.exists(temp_path):
-        os.remove(temp_path)
-    subprocess.call(["pdftotext", pdf_path, temp_path])
-    f = open(temp_path, encoding="utf8")
+def text_from_pdf(pdf_path):
+    txt_path = pdf_path.replace("pdfs", "txts").replace(".pdf", ".txt")
+    if not os.path.exists(os.path.dirname(txt_path)):
+        os.makedirs(os.path.dirname(txt_path))
+    if not os.path.exists(txt_path):
+        subprocess.call(["pdftotext", pdf_path, txt_path])
+    f = open(txt_path, encoding="utf8")
     text = f.read()
     f.close()
-    os.remove(temp_path)
     return text
 
 base_url  = "http://papers.nips.cc"
 
 index_urls = {1987: "https://papers.nips.cc/book/neural-information-processing-systems-1987"}
-for i in range(1, 30):
+for i in range(1, 33):
     year = i+1987
     index_urls[year] = "http://papers.nips.cc/book/advances-in-neural-information-processing-systems-%d-%d" % (i, year)
 
@@ -44,9 +45,11 @@ for year in sorted(index_urls.keys()):
     print("%d Papers Found" % len(paper_links))
 
 
-    temp_path = os.path.join("working", "temp.txt")
+    temp_path = os.path.join("working", "txt")
 
     for link in paper_links:
+        # import pdb; pdb.set_trace()
+        if "visual-sequence-learning-in-hierarchical-prediction-networks-and-primate-visual-cortex" in link['href']: continue
         paper_title = link.contents[0]
         info_link = base_url + link["href"]
         pdf_link = info_link + ".pdf"
@@ -95,8 +98,9 @@ for year in sorted(index_urls.keys()):
             if f.read(15)==b"<!DOCTYPE html>":
                 print("PDF MISSING")
                 continue
-        paper_text = text_from_pdf(pdf_path, temp_path)
-        papers.append([paper_id, year, paper_title, event_type, pdf_name, abstract, paper_text])
+        if "visual-sequence-learning-in-hierarchical-prediction-networks-and-primate-visual-cortex" not in link:
+            paper_text = text_from_pdf(pdf_path)
+            papers.append([paper_id, year, paper_title, event_type, pdf_name, abstract, paper_text])
 
 pd.DataFrame(list(nips_authors), columns=["id","name"]).sort_values(by="id").to_csv("output/authors.csv", index=False)
 pd.DataFrame(papers, columns=["id", "year", "title", "event_type", "pdf_name", "abstract", "paper_text"]).sort_values(by="id").to_csv("output/papers.csv", index=False)
